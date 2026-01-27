@@ -32,7 +32,12 @@ export default function Dashboard() {
       if (sessionsRes.ok) {
         const sessionsData = await sessionsRes.json();
         setSessions(sessionsData.sessions || []);
-        setStats(sessionsData.stats || stats);
+        setStats(sessionsData.stats || {
+          totalSessions: 0,
+          activeSessions: 0,
+          idleSessions: 0,
+          totalMessages: 0,
+        });
       }
 
       if (activityRes.ok) {

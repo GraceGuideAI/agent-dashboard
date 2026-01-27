@@ -2,21 +2,14 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Agent Activity | Clawdbot",
-  description: "Real-time agent activity dashboard",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Agent Activity",
-  },
+  title: "Agent Dashboard - Clawdbot",
+  description: "Real-time dashboard showing Clawdbot agents at work",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  userScalable: false,
-  themeColor: "#0a0a0a",
 };
 
 export default function RootLayout({
@@ -26,7 +19,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased min-h-screen">{children}</body>
+      <body className="antialiased min-h-screen bg-[#0a0a0f]">
+        {children}
+      </body>
     </html>
   );
 }

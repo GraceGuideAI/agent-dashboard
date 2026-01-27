@@ -5,15 +5,15 @@ import { motion, AnimatePresence } from "framer-motion";
 
 // Types
 interface Session {
-  id: string;
+  key: string;
   label?: string;
   channel?: string;
-  state?: string;
+  kind?: string;
   model?: string;
-  createdAt?: string;
-  lastActivity?: string;
-  parentId?: string;
-  turns?: number;
+  updatedAt?: number;
+  totalTokens?: number;
+  thinkingLevel?: string;
+  abortedLastRun?: boolean;
 }
 
 interface SessionsResponse {
@@ -318,7 +318,7 @@ function AgentCard({
   isOperator: boolean;
 }) {
   const state = getAgentState(session);
-  const label = session.label || session.id.split(":").pop() || "Agent";
+  const label = session.label || session.key.split(":").pop() || "Agent";
 
   return (
     <motion.div
@@ -479,7 +479,7 @@ export default function Dashboard() {
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               <AnimatePresence mode="popLayout">
                 {subagents.map((session) => (
-                  <AgentCard key={session.id} session={session} isOperator={false} />
+                  <AgentCard key={session.key} session={session} isOperator={false} />
                 ))}
               </AnimatePresence>
             </div>

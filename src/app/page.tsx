@@ -14,6 +14,8 @@ interface Session {
   totalTokens?: number;
   thinkingLevel?: string;
   abortedLastRun?: boolean;
+  turns?: number;
+  lastActivity?: string;
 }
 
 interface SessionsResponse {
@@ -42,10 +44,13 @@ function getColorForLabel(label: string) {
 }
 
 function getAgentState(session: Session): AgentState {
-  const state = session.state?.toLowerCase();
-  if (state === "thinking" || state === "processing") return "thinking";
-  if (state === "executing" || state === "running" || state === "active") return "executing";
-  if (state === "complete" || state === "done" || state === "finished") return "complete";
+  // Check if session was active in last 30 seconds
+  const now = Date.now();
+  const lastUpdate = session.updatedAt || 0;
+  const isRecent = now - lastUpdate < 30000;
+  
+  if (isRecent && session.thinkingLevel) return "thinking";
+  if (isRecent) return "executing";
   return "idle";
 }
 
@@ -418,10 +423,10 @@ export default function Dashboard() {
 
   // Separate operator (main) and subagents
   const operator = sessions.find(
-    (s) => s.id.includes(":main:main") || (s.label === "main" && !s.parentId)
+    (s) => s.key.includes(":main:main") || (s.label === "main" && !false)
   );
   const subagents = sessions.filter(
-    (s) => s.id.includes(":subagent:") || s.parentId
+    (s) => s.key.includes(":subagent:") || false
   );
 
   return (

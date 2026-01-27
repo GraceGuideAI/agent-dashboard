@@ -5,12 +5,17 @@ const AUTH_TOKEN = process.env.AUTH_TOKEN || "";
 
 export async function GET() {
   try {
-    const response = await fetch(`${GATEWAY_URL}/api/sessions/list`, {
+    // Use POST /tools/invoke endpoint
+    const response = await fetch(`${GATEWAY_URL}/tools/invoke`, {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${AUTH_TOKEN}`,
         "Content-Type": "application/json",
       },
-      // Don't cache
+      body: JSON.stringify({
+        tool: "sessions_list",
+        args: {}
+      }),
       cache: "no-store",
     });
 
@@ -24,8 +29,8 @@ export async function GET() {
 
     const data = await response.json();
     
-    // Normalize the response structure
-    const sessions = Array.isArray(data) ? data : data.sessions || [];
+    // Extract sessions from the tools/invoke response format
+    const sessions = data?.result?.details?.sessions || [];
     
     return NextResponse.json({
       sessions,

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import type { ActivityItem } from '@/lib/types';
 
 const GATEWAY_URL = process.env.GATEWAY_URL;
-const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || '';
+const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || process.env.AUTH_TOKEN || '';
 
 interface GatewayHistoryEntry {
   role: string;

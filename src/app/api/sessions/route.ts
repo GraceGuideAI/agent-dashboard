@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 const GATEWAY_URL = process.env.GATEWAY_URL;
-const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || "";
+const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || process.env.AUTH_TOKEN || "";
 
 export async function GET() {
   try {

@@ -75,7 +75,7 @@ interface UsageItem {
   model: string;
   tokens?: number;
   cost?: number;
-  window?: string;
+  window?: string | null;
 }
 
 interface TelemetryResponse {
@@ -150,7 +150,7 @@ function formatTimestamp(iso?: string) {
   return date.toLocaleString();
 }
 
-function statusTone(status?: string) {
+function statusTone(status?: string | null) {
   const value = (status || "").toLowerCase();
   if (value.includes("fail") || value.includes("error")) return "text-red-400";
   if (value.includes("warn")) return "text-amber-300";
@@ -875,11 +875,13 @@ export default function Dashboard() {
                     >
                       <div>
                         <div className="text-slate-200">{usage.model}</div>
-                        {usage.window && <div className="text-slate-600">{usage.window}</div>}
+                        {('window' in usage && usage.window) && (
+                          <div className="text-slate-600">{usage.window}</div>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-emerald-300">{usage.tokens ? `${usage.tokens} tokens` : "tokens -"}</span>
-                        <span className="text-amber-300">{usage.cost ? `$${usage.cost.toFixed(4)}` : "cost -"}</span>
+                        <span className="text-amber-300">{('cost' in usage && usage.cost) ? `$${usage.cost.toFixed(4)}` : "cost -"}</span>
                       </div>
                     </div>
                   ))}

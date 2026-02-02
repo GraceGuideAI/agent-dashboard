@@ -186,29 +186,69 @@ async function fallbackFromHistory(): Promise<BackgroundItem[]> {
   const label = parseLabel(sessionId, history?.label);
   const items: BackgroundItem[] = [];
 
-  for (const entry of entries.slice(-40)) {
-    const content = typeof entry.content === 'string'
+  for (const entry of entries.slice(-60)) {
+    const timestamp = entry.timestamp || new Date().toISOString();
+
+    const contentArray = Array.isArray(entry.content) ? entry.content : [];
+    const textContent = typeof entry.content === 'string'
       ? entry.content
-      : Array.isArray(entry.content)
-        ? (entry.content as Array<{ text?: string }>).map((c) => c.text).filter(Boolean).join(' ')
-        : '';
+      : (contentArray as Array<{ text?: string }>).map((c) => c.text).filter(Boolean).join(' ');
 
     const toolNames = entry.tool_calls?.map((tc) => tc.function?.name || 'unknown').join(', ');
     const isTool = Boolean(entry.tool_calls?.length);
 
-    if (!content && !isTool) continue;
+    if (isTool) {
+      items.push({
+        id: `${sessionId}-${timestamp}-${Math.random()}`,
+        title: 'tool_call',
+        status: entry.role,
+        detail: `tools: ${toolNames}`.slice(0, 400),
+        source: label,
+        timestamp,
+      });
+    }
 
-    const title = isTool ? 'tool_call' : entry.role || 'event';
-    const detail = isTool ? `tools: ${toolNames}` : content;
+    for (const chunk of contentArray as Array<{ type?: string; name?: string; arguments?: unknown; text?: string; content?: unknown }>) {
+      if (chunk.type === 'toolCall') {
+        const args = chunk.arguments ? JSON.stringify(chunk.arguments) : '';
+        items.push({
+          id: `${sessionId}-${timestamp}-${Math.random()}`,
+          title: `tool_call:${chunk.name || 'unknown'}`,
+          status: entry.role,
+          detail: args.slice(0, 400),
+          source: label,
+          timestamp,
+        });
+        continue;
+      }
+      if (chunk.type === 'toolResult') {
+        const resultText = typeof chunk.content === 'string'
+          ? chunk.content
+          : JSON.stringify(chunk.content ?? '') || '';
+        items.push({
+          id: `${sessionId}-${timestamp}-${Math.random()}`,
+          title: `tool_result:${chunk.name || 'unknown'}`,
+          status: entry.role,
+          detail: resultText.slice(0, 400),
+          source: label,
+          timestamp,
+        });
+        continue;
+      }
+    }
 
-    items.push({
-      id: `${sessionId}-${entry.timestamp || Date.now()}-${Math.random()}`,
-      title,
-      status: entry.role,
-      detail: detail.slice(0, 400),
-      source: label,
-      timestamp: entry.timestamp || new Date().toISOString(),
-    });
+    if (!isTool && textContent) {
+      if (entry.role === 'system') {
+        items.push({
+          id: `${sessionId}-${timestamp}-${Math.random()}`,
+          title: 'system',
+          status: entry.role,
+          detail: textContent.slice(0, 400),
+          source: label,
+          timestamp,
+        });
+      }
+    }
   }
 
   items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());

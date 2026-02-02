@@ -1,21 +1,27 @@
 import { NextResponse } from "next/server";
 
-const GATEWAY_URL = process.env.GATEWAY_URL || "https://peters-macbook-pro-4.tail2e18e2.ts.net";
-const AUTH_TOKEN = process.env.AUTH_TOKEN || "";
+const GATEWAY_URL = process.env.GATEWAY_URL;
+const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || "";
 
 export async function GET() {
   try {
-    // Use POST /tools/invoke endpoint
-    const response = await fetch(`${GATEWAY_URL}/tools/invoke`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        tool: "sessions_list",
-        args: {}
-      }),
+    if (!GATEWAY_URL) {
+      return NextResponse.json(
+        { error: "Missing GATEWAY_URL", sessions: [] },
+        { status: 503 }
+      );
+    }
+
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (GATEWAY_TOKEN) {
+      headers.Authorization = `Bearer ${GATEWAY_TOKEN}`;
+    }
+
+    const response = await fetch(`${GATEWAY_URL}/sessions/list`, {
+      method: "GET",
+      headers,
       cache: "no-store",
     });
 
@@ -28,9 +34,8 @@ export async function GET() {
     }
 
     const data = await response.json();
-    
-    // Extract sessions from the tools/invoke response format
-    const sessions = data?.result?.details?.sessions || [];
+
+    const sessions = data?.sessions || [];
     
     return NextResponse.json({
       sessions,

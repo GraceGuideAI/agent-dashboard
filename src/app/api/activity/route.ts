@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { ActivityItem } from '@/lib/types';
 
-const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:4445';
+const GATEWAY_URL = process.env.GATEWAY_URL;
 const GATEWAY_TOKEN = process.env.GATEWAY_TOKEN || '';
 
 interface GatewayHistoryEntry {
@@ -26,6 +26,7 @@ async function fetchSessionHistory(sessionId: string): Promise<GatewayHistoryRes
       headers['Authorization'] = `Bearer ${GATEWAY_TOKEN}`;
     }
 
+    if (!GATEWAY_URL) return null;
     const response = await fetch(`${GATEWAY_URL}/sessions/history?session_id=${encodeURIComponent(sessionId)}&limit=10`, {
       method: 'GET',
       headers,
@@ -48,6 +49,7 @@ async function fetchAllSessions(): Promise<string[]> {
       headers['Authorization'] = `Bearer ${GATEWAY_TOKEN}`;
     }
 
+    if (!GATEWAY_URL) return [];
     const response = await fetch(`${GATEWAY_URL}/sessions/list`, {
       method: 'GET',
       headers,

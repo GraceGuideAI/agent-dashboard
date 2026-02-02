@@ -250,31 +250,35 @@ function normalizeProcesses(result: unknown) {
 }
 
 function normalizeCronJobs(result: unknown) {
-  const jobs = normalizeArray(result);
+  // result is the parsed JSON from content[0].text
+  const record = result as Record<string, unknown> | null;
+  const jobs = (record?.jobs as Array<Record<string, unknown>> | undefined) || [];
+  
   return jobs.map((job) => {
-    const record = job as Record<string, unknown>;
+    const state = (job.state as Record<string, unknown> | undefined) || {};
     return {
-      id: coerceString(record.id) || coerceString(record.job_id) || coerceString(record.name) || `job-${Math.random()}`,
-      name: coerceString(record.name) || coerceString(record.job) || 'cron-job',
-      schedule: coerceString(record.schedule) || coerceString(record.cron) || coerceString(record.expression),
-      lastRun: coerceTimestamp(record.last_run) || coerceTimestamp(record.lastRun) || coerceTimestamp(record.updated_at),
-      lastStatus: coerceString(record.status) || coerceString(record.last_status),
-      lastFailure: coerceString(record.last_failure) || coerceString(record.lastError),
+      id: coerceString(job.id) || `job-${Math.random()}`,
+      name: coerceString(job.name) || 'cron-job',
+      schedule: coerceString((job.schedule as Record<string, unknown>)?.expr) || coerceString((job.schedule as Record<string, unknown>)?.kind),
+      lastRun: coerceTimestamp(state.lastRunAtMs) || coerceTimestamp(job.updatedAtMs),
+      lastStatus: coerceString(state.lastStatus) || 'unknown',
+      lastFailure: coerceString(state.lastError),
     };
   });
 }
 
 function normalizeCronRuns(result: unknown) {
-  const runs = normalizeArray(result);
+  const record = result as Record<string, unknown> | null;
+  const runs = (record?.runs as Array<Record<string, unknown>> | undefined) || [];
+  
   return runs.map((run) => {
-    const record = run as Record<string, unknown>;
     return {
-      id: coerceString(record.id) || coerceString(record.run_id) || `run-${Math.random()}`,
-      jobId: coerceString(record.job_id) || coerceString(record.job) || coerceString(record.name),
-      status: coerceString(record.status) || coerceString(record.state) || 'unknown',
-      startedAt: coerceTimestamp(record.started_at) || coerceTimestamp(record.startedAt) || coerceTimestamp(record.timestamp),
-      finishedAt: coerceTimestamp(record.finished_at) || coerceTimestamp(record.completed_at) || coerceTimestamp(record.finishedAt),
-      error: coerceString(record.error) || coerceString(record.message),
+      id: coerceString(run.id) || `run-${Math.random()}`,
+      jobId: coerceString(run.jobId) || coerceString(run.name),
+      status: coerceString(run.status) || 'unknown',
+      startedAt: coerceTimestamp(run.startedAtMs) || coerceTimestamp(run.createdAtMs),
+      finishedAt: coerceTimestamp(run.finishedAtMs),
+      error: coerceString(run.error),
     };
   });
 }
@@ -358,47 +362,40 @@ export async function GET() {
     }
   }
 
-  const processPayload = await firstAvailable(
-    ['process_list', 'processes_list', 'system_process_list'],
-    { limit: 20 },
-    warnings,
-    'process list'
-  );
+  // process list - no dedicated tool available
+  const processPayload = null;
+  warnings.push('process list unavailable (no process_list tool)');
   const processes = processPayload ? normalizeProcesses(processPayload.result) : [];
 
-  const cronJobsPayload = await firstAvailable(
-    ['cron_list', 'cron_jobs_list', 'cron_list_jobs'],
-    { limit: 50 },
-    warnings,
-    'cron jobs'
-  );
-  const cronRunsPayload = await firstAvailable(
-    ['cron_runs_list', 'cron_history', 'cron_runs'],
-    { limit: 50 },
-    warnings,
-    'cron runs'
-  );
+  // cron jobs - correct gateway tool: cron with action "list"
+  const cronJobsResponse = await invokeGateway('cron', { action: 'list', limit: 50 });
+  const cronJobsPayload = cronJobsResponse.ok && !isErrorResult(cronJobsResponse.result) 
+    ? { tool: 'cron', result: cronJobsResponse.result } 
+    : null;
+  if (!cronJobsPayload) warnings.push('cron jobs unavailable (tried cron list)');
+  
+  // cron runs - try cron with action "runs" or "run"
+  let cronRunsPayload = null;
+  for (const action of ['runs', 'run']) {
+    const response = await invokeGateway('cron', { action, limit: 50 });
+    if (response.ok && !isErrorResult(response.result)) {
+      cronRunsPayload = { tool: 'cron', result: response.result };
+      break;
+    }
+  }
+  if (!cronRunsPayload) warnings.push('cron runs unavailable (tried cron runs, cron run)');
 
-  const queuesPayload = await firstAvailable(
-    ['queue_status', 'queue_depth', 'queues_list', 'io_queue_status'],
-    { limit: 20 },
-    warnings,
-    'queues'
-  );
+  // queues - no dedicated tool available
+  const queuesPayload = null;
+  warnings.push('queues unavailable (no queue_status tool)');
+  
+  // system events - no dedicated tool available
+  const eventsPayload = null;
+  warnings.push('system events unavailable (no system_events_list tool)');
 
-  const eventsPayload = await firstAvailable(
-    ['system_events_list', 'events_list', 'system_log_list'],
-    { limit: 50 },
-    warnings,
-    'system events'
-  );
-
-  const usagePayload = await firstAvailable(
-    ['usage_summary', 'model_usage', 'cost_usage', 'billing_usage', 'usage_list'],
-    { limit: 20 },
-    warnings,
-    'usage'
-  );
+  // usage/cost - try session_status, no dedicated usage tool available
+  const usagePayload = null;
+  warnings.push('usage unavailable (no usage_summary tool, try session_status)');
 
   const response = {
     gateway: {
@@ -416,25 +413,25 @@ export async function GET() {
     },
     sessionStatus,
     processes: {
-      tool: processPayload?.tool || null,
+      tool: null,
       items: processes,
     },
     cron: {
-      tool: cronJobsPayload?.tool || cronRunsPayload?.tool || null,
+      tool: 'cron',
       jobs: cronJobsPayload ? normalizeCronJobs(cronJobsPayload.result) : [],
       runs: cronRunsPayload ? normalizeCronRuns(cronRunsPayload.result) : [],
     },
     queues: {
-      tool: queuesPayload?.tool || null,
-      items: queuesPayload ? normalizeQueues(queuesPayload.result) : [],
+      tool: null,
+      items: [],
     },
     systemEvents: {
-      tool: eventsPayload?.tool || null,
-      items: eventsPayload ? normalizeEvents(eventsPayload.result) : [],
+      tool: null,
+      items: [],
     },
     usage: {
-      tool: usagePayload?.tool || null,
-      items: usagePayload ? normalizeUsage(usagePayload.result) : [],
+      tool: null,
+      items: [],
     },
     risk: {
       whoopTokenExpiresAt: WHOOP_TOKEN_EXPIRES_AT || null,

@@ -190,7 +190,7 @@ async function fallbackFromHistory(): Promise<BackgroundItem[]> {
     const content = typeof entry.content === 'string'
       ? entry.content
       : Array.isArray(entry.content)
-        ? entry.content.map((c: { text?: string }) => c.text).filter(Boolean).join(' ')
+        ? (entry.content as Array<{ text?: string }>).map((c) => c.text).filter(Boolean).join(' ')
         : '';
 
     const toolNames = entry.tool_calls?.map((tc) => tc.function?.name || 'unknown').join(', ');

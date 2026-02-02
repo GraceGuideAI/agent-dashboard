@@ -402,8 +402,9 @@ export default function Dashboard() {
         </div>
 
         {activeTab === "agents" ? (
-        {/* Operator section */}
-        <section className="mb-8">
+          <>
+            {/* Operator section */}
+            <section className="mb-8">
           <h2 className="text-[10px] sm:text-xs font-mono text-slate-500 tracking-widest mb-4 flex items-center gap-2">
             <span className="w-8 h-px bg-slate-700" />
             MAIN_AGENT
@@ -440,6 +441,7 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+          </>
         ) : (
           <section className="mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">

@@ -12,9 +12,11 @@ interface GatewayHistoryEntry {
 }
 
 interface GatewayHistoryResponse {
-  session_id: string;
+  session_id?: string;
+  sessionKey?: string;
   label?: string;
   history?: GatewayHistoryEntry[];
+  messages?: GatewayHistoryEntry[];
 }
 
 interface BackgroundItem {
@@ -178,13 +180,19 @@ async function fallbackFromHistory(): Promise<BackgroundItem[]> {
   if (!sessionId) return [];
 
   const history = await fetchSessionHistory(sessionId);
-  if (!history?.history) return [];
+  const entries = history?.history || history?.messages || [];
+  if (!entries.length) return [];
 
-  const label = parseLabel(sessionId, history.label);
+  const label = parseLabel(sessionId, history?.label);
   const items: BackgroundItem[] = [];
 
-  for (const entry of history.history.slice(-30)) {
-    const content = typeof entry.content === 'string' ? entry.content : '';
+  for (const entry of entries.slice(-40)) {
+    const content = typeof entry.content === 'string'
+      ? entry.content
+      : Array.isArray(entry.content)
+        ? entry.content.map((c: { text?: string }) => c.text).filter(Boolean).join(' ')
+        : '';
+
     const toolNames = entry.tool_calls?.map((tc) => tc.function?.name || 'unknown').join(', ');
     const isTool = Boolean(entry.tool_calls?.length);
 
@@ -197,7 +205,7 @@ async function fallbackFromHistory(): Promise<BackgroundItem[]> {
       id: `${sessionId}-${entry.timestamp || Date.now()}-${Math.random()}`,
       title,
       status: entry.role,
-      detail: detail.slice(0, 220),
+      detail: detail.slice(0, 400),
       source: label,
       timestamp: entry.timestamp || new Date().toISOString(),
     });

@@ -27,14 +27,19 @@ async function fetchSessionHistory(sessionId: string): Promise<GatewayHistoryRes
     }
 
     if (!GATEWAY_URL) return null;
-    const response = await fetch(`${GATEWAY_URL}/sessions/history?session_id=${encodeURIComponent(sessionId)}&limit=10`, {
-      method: 'GET',
+    const response = await fetch(`${GATEWAY_URL}/tools/invoke`, {
+      method: 'POST',
       headers,
       cache: 'no-store',
+      body: JSON.stringify({
+        tool: 'sessions_history',
+        args: { sessionKey: sessionId, limit: 10 }
+      })
     });
 
     if (!response.ok) return null;
-    return await response.json();
+    const data = await response.json();
+    return data?.result || null;
   } catch {
     return null;
   }
@@ -50,15 +55,20 @@ async function fetchAllSessions(): Promise<string[]> {
     }
 
     if (!GATEWAY_URL) return [];
-    const response = await fetch(`${GATEWAY_URL}/sessions/list`, {
-      method: 'GET',
+    const response = await fetch(`${GATEWAY_URL}/tools/invoke`, {
+      method: 'POST',
       headers,
       cache: 'no-store',
+      body: JSON.stringify({
+        tool: 'sessions_list',
+        args: {}
+      })
     });
 
     if (!response.ok) return [];
     const data = await response.json();
-    return (data.sessions || []).map((s: { session_id: string }) => s.session_id);
+    const sessions = data?.result?.sessions || data?.result?.details?.sessions || [];
+    return sessions.map((s: { session_id: string; key?: string }) => s.session_id || s.key);
   } catch {
     return [];
   }

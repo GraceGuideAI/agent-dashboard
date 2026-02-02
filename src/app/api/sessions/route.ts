@@ -19,10 +19,14 @@ export async function GET() {
       headers.Authorization = `Bearer ${GATEWAY_TOKEN}`;
     }
 
-    const response = await fetch(`${GATEWAY_URL}/sessions/list`, {
-      method: "GET",
+    const response = await fetch(`${GATEWAY_URL}/tools/invoke`, {
+      method: "POST",
       headers,
       cache: "no-store",
+      body: JSON.stringify({
+        tool: "sessions_list",
+        args: {}
+      })
     });
 
     if (!response.ok) {
@@ -35,7 +39,7 @@ export async function GET() {
 
     const data = await response.json();
 
-    const sessions = data?.sessions || [];
+    const sessions = data?.result?.sessions || data?.result?.details?.sessions || [];
     
     return NextResponse.json({
       sessions,

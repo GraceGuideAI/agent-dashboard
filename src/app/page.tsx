@@ -465,32 +465,18 @@ export default function Dashboard() {
             )}
 
             {backgroundItems.length > 0 ? (
-              <div className="grid grid-cols-1 gap-3">
+              <div
+                className="border-4 border-slate-700 bg-black/80 p-3 sm:p-4 font-mono text-[10px] sm:text-xs text-emerald-200 max-h-[420px] overflow-auto"
+                style={{ boxShadow: "6px 6px 0 rgba(15,23,42,0.5)" }}
+              >
                 {backgroundItems.map((item) => (
-                  <div
-                    key={item.id}
-                    className="border-4 border-slate-700 bg-slate-900 p-3"
-                    style={{ boxShadow: "5px 5px 0 rgba(15,23,42,0.5)" }}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="text-xs sm:text-sm font-mono text-slate-200 truncate">
-                          {item.title}
-                        </div>
-                        {item.detail && (
-                          <div className="text-[10px] sm:text-xs text-slate-500 mt-1 truncate">
-                            {item.detail}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-[10px] sm:text-xs font-mono text-slate-500 whitespace-nowrap">
-                        {new Date(item.timestamp).toLocaleTimeString()}
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px] sm:text-xs font-mono text-slate-400">
-                      {item.status && <span className="px-2 py-0.5 border border-slate-600">{item.status}</span>}
-                      {item.source && <span className="px-2 py-0.5 border border-slate-600">{item.source}</span>}
-                    </div>
+                  <div key={item.id} className="whitespace-pre-wrap leading-relaxed">
+                    <span className="text-slate-500">
+                      [{new Date(item.timestamp).toLocaleTimeString()}]
+                    </span>{" "}
+                    <span className="text-indigo-300">{item.source || "main"}</span>{" "}
+                    <span className="text-slate-400">{item.title}</span>{" "}
+                    <span className="text-emerald-200">{item.detail}</span>
                   </div>
                 ))}
               </div>

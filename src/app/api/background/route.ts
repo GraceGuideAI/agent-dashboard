@@ -36,6 +36,20 @@ function buildHeaders() {
   return headers;
 }
 
+function parseGatewayResult(result: unknown) {
+  if (!result) return result;
+  const record = result as Record<string, unknown>;
+  const content = record.content as Array<{ type?: string; text?: string }> | undefined;
+  if (content && content[0]?.text) {
+    try {
+      return JSON.parse(content[0].text);
+    } catch {
+      return result;
+    }
+  }
+  return result;
+}
+
 async function invokeGateway(tool: string, args: Record<string, unknown>) {
   if (!GATEWAY_URL) return null;
   const response = await fetch(`${GATEWAY_URL}/tools/invoke`, {
@@ -46,7 +60,7 @@ async function invokeGateway(tool: string, args: Record<string, unknown>) {
   });
   if (!response.ok) return null;
   const data = await response.json();
-  return data?.result ?? null;
+  return parseGatewayResult(data?.result ?? null);
 }
 
 function coerceString(value: unknown) {
@@ -145,6 +159,11 @@ async function fetchAllSessions(): Promise<string[]> {
   return sessions.map((s) => s.session_id || s.key || '').filter(Boolean);
 }
 
+async function fetchMainSession(): Promise<string | null> {
+  const sessions = await fetchAllSessions();
+  return sessions.find((s) => s.includes(':main:main')) || sessions[0] || null;
+}
+
 function parseLabel(sessionId: string, label?: string): string {
   if (label) return label;
   const parts = sessionId.split(':');
@@ -155,42 +174,37 @@ function parseLabel(sessionId: string, label?: string): string {
 }
 
 async function fallbackFromHistory(): Promise<BackgroundItem[]> {
-  const sessionIds = await fetchAllSessions();
-  const recentSessions = sessionIds.slice(0, 5);
+  const sessionId = await fetchMainSession();
+  if (!sessionId) return [];
+
+  const history = await fetchSessionHistory(sessionId);
+  if (!history?.history) return [];
+
+  const label = parseLabel(sessionId, history.label);
   const items: BackgroundItem[] = [];
 
-  for (const sessionId of recentSessions) {
-    const history = await fetchSessionHistory(sessionId);
-    if (!history?.history) continue;
+  for (const entry of history.history.slice(-30)) {
+    const content = typeof entry.content === 'string' ? entry.content : '';
+    const toolNames = entry.tool_calls?.map((tc) => tc.function?.name || 'unknown').join(', ');
+    const isTool = Boolean(entry.tool_calls?.length);
 
-    const label = parseLabel(sessionId, history.label);
-    for (const entry of history.history.slice(-8)) {
-      const content = typeof entry.content === 'string' ? entry.content : '';
-      const isBackground =
-        entry.role === 'system' ||
-        content.toLowerCase().includes('background') ||
-        content.toLowerCase().includes('cron') ||
-        content.toLowerCase().includes('scheduled');
+    if (!content && !isTool) continue;
 
-      if (!entry.tool_calls?.length && !isBackground) continue;
+    const title = isTool ? 'tool_call' : entry.role || 'event';
+    const detail = isTool ? `tools: ${toolNames}` : content;
 
-      const toolNames = entry.tool_calls?.map((tc) => tc.function?.name || 'unknown').join(', ');
-      const title = entry.tool_calls?.length ? 'Tool Calls' : 'System Event';
-      const detail = entry.tool_calls?.length ? `Tools: ${toolNames}` : content || 'Background work';
-
-      items.push({
-        id: `${sessionId}-${entry.timestamp || Date.now()}-${Math.random()}`,
-        title,
-        status: entry.tool_calls?.length ? 'tool_calls' : 'system',
-        detail: detail.slice(0, 140),
-        source: label,
-        timestamp: entry.timestamp || new Date().toISOString(),
-      });
-    }
+    items.push({
+      id: `${sessionId}-${entry.timestamp || Date.now()}-${Math.random()}`,
+      title,
+      status: entry.role,
+      detail: detail.slice(0, 220),
+      source: label,
+      timestamp: entry.timestamp || new Date().toISOString(),
+    });
   }
 
   items.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-  return items.slice(0, 20);
+  return items.slice(0, 30);
 }
 
 export async function GET() {

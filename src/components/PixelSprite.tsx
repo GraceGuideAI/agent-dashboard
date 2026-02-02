@@ -26,8 +26,10 @@ function getColorForLabel(label: string) {
 function OperatorSprite({ state, frame }: { state: SpriteState; frame: number }) {
   const isWalking = state === 'executing';
   const legOffset = isWalking ? (frame % 2 === 0 ? 1 : -1) : 0;
-  const bobOffset = state === 'idle' ? Math.sin(frame * 0.5) * 0.5 : 0;
-  const armRaise = state === 'thinking' ? -2 : 0;
+  const bobOffset =
+    state === 'idle' ? Math.sin(frame * 0.5) * 0.5 : state === 'thinking' ? Math.sin(frame * 0.8) * 1.2 : Math.sin(frame * 1.4) * 0.8;
+  const armRaise = state === 'thinking' ? -3 : state === 'executing' ? (frame % 2 === 0 ? -1 : 0) : 0;
+  const headTilt = state === 'thinking' ? Math.sin(frame * 0.6) * 1.5 : state === 'executing' ? (frame % 2 === 0 ? 1.5 : -1.5) : 0;
 
   return (
     <svg viewBox="0 0 16 24" className="w-full h-full" style={{ imageRendering: 'pixelated' }}>
@@ -53,7 +55,7 @@ function OperatorSprite({ state, frame }: { state: SpriteState; frame: number })
       {/* Shadow */}
       <ellipse cx="8" cy="23" rx="4" ry="1" fill="#1e1b4b" opacity="0.5" />
 
-      <g transform={`translate(0, ${bobOffset})`}>
+      <g transform={`translate(0, ${bobOffset}) rotate(${headTilt} 8 10)`}>
         {/* Robe/Body - Purple wizard robe */}
         <rect x="5" y="10" width="6" height="8" fill="#7c3aed" />
         <rect x="4" y="12" width="1" height="5" fill="#7c3aed" />
@@ -134,8 +136,10 @@ function OperatorSprite({ state, frame }: { state: SpriteState; frame: number })
 function WorkerSprite({ state, frame, colors }: { state: SpriteState; frame: number; colors: typeof SUBAGENT_COLORS[0] }) {
   const isWalking = state === 'executing';
   const legOffset = isWalking ? (frame % 2 === 0 ? 1 : -1) : 0;
-  const bobOffset = state === 'idle' ? Math.sin(frame * 0.5) * 0.3 : 0;
-  const antennaWiggle = state === 'thinking' ? Math.sin(frame * 2) * 2 : 0;
+  const bobOffset =
+    state === 'idle' ? Math.sin(frame * 0.5) * 0.4 : state === 'thinking' ? Math.sin(frame * 0.9) * 1 : Math.sin(frame * 1.6) * 0.7;
+  const antennaWiggle = state === 'thinking' ? Math.sin(frame * 2.4) * 2.5 : state === 'executing' ? Math.sin(frame * 2.8) * 1.2 : 0;
+  const bodyTilt = state === 'thinking' ? Math.sin(frame * 0.6) * 2 : state === 'executing' ? (frame % 2 === 0 ? 2 : -2) : 0;
 
   return (
     <svg viewBox="0 0 16 20" className="w-full h-full" style={{ imageRendering: 'pixelated' }}>
@@ -159,7 +163,7 @@ function WorkerSprite({ state, frame, colors }: { state: SpriteState; frame: num
       {/* Shadow */}
       <ellipse cx="8" cy="19" rx="3" ry="1" fill="#1e293b" opacity="0.5" />
 
-      <g transform={`translate(0, ${bobOffset})`}>
+      <g transform={`translate(0, ${bobOffset}) rotate(${bodyTilt} 8 9)`}>
         {/* Antenna */}
         <rect x={7 + antennaWiggle * 0.3} y="0" width="2" height="3" fill={colors.outline} />
         <rect x={6 + antennaWiggle * 0.5} y="0" width="1" height="1" fill={colors.accent} />
@@ -244,7 +248,7 @@ export function PixelCharacter({
 
   // Animation frame counter
   useEffect(() => {
-    const frameRate = state === 'executing' ? 150 : state === 'thinking' ? 300 : 500;
+    const frameRate = state === 'executing' ? 90 : state === 'thinking' ? 160 : 480;
     const interval = setInterval(() => {
       setFrame((f) => f + 1);
     }, frameRate);
@@ -256,7 +260,7 @@ export function PixelCharacter({
     if (state === 'executing') {
       const walkInterval = setInterval(() => {
         setPosition((prev) => {
-          const speed = 8;
+          const speed = 12;
           let newX = prev.x + speed * prev.direction;
           let newDir = prev.direction;
 
@@ -277,21 +281,21 @@ export function PixelCharacter({
       // Pacing back and forth in smaller area
       const paceInterval = setInterval(() => {
         setPosition((prev) => {
-          const speed = 4;
+          const speed = 6;
           const newX = prev.x + speed * prev.direction;
           let newDir = prev.direction;
 
           // Smaller pacing range
           const center = containerWidth / 2;
-          if (newX > center + 30) {
+          if (newX > center + 40) {
             newDir = -1;
-          } else if (newX < center - 30) {
+          } else if (newX < center - 40) {
             newDir = 1;
           }
 
           return { x: newX, direction: newDir };
         });
-      }, 400);
+      }, 240);
       return () => clearInterval(paceInterval);
     } else {
       // Return to center when idle
@@ -302,7 +306,7 @@ export function PixelCharacter({
   const spriteSize = isOperator ? 64 : 48;
 
   return (
-    <div className="relative w-full h-24 overflow-hidden">
+    <div className="relative w-full h-full overflow-hidden">
       <motion.div
         className="absolute bottom-0"
         animate={{ x: position.x }}
@@ -313,11 +317,27 @@ export function PixelCharacter({
           transform: `scaleX(${position.direction})`,
         }}
       >
-        {isOperator ? (
-          <OperatorSprite state={state} frame={frame} />
-        ) : (
-          <WorkerSprite state={state} frame={frame} colors={colors} />
-        )}
+        <motion.div
+          animate={
+            state === 'thinking'
+              ? { y: [0, -6, 0], rotate: [-3, 3, -3], scale: [1, 1.04, 1] }
+              : state === 'executing'
+              ? { y: [0, -4, 0], rotate: [0, 2, -2, 0], scale: [1, 1.03, 1] }
+              : { y: [0, -2, 0] }
+          }
+          transition={{
+            duration: state === 'executing' ? 0.6 : state === 'thinking' ? 1.1 : 1.6,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{ transformOrigin: 'bottom center' }}
+        >
+          {isOperator ? (
+            <OperatorSprite state={state} frame={frame} />
+          ) : (
+            <WorkerSprite state={state} frame={frame} colors={colors} />
+          )}
+        </motion.div>
       </motion.div>
 
       {/* Ground line decoration */}

@@ -24,6 +24,15 @@ interface SessionsResponse {
   total?: number;
 }
 
+interface BackgroundItem {
+  id: string;
+  title: string;
+  status?: string;
+  detail?: string;
+  source?: string;
+  timestamp: string;
+}
+
 type AgentState = "idle" | "thinking" | "executing" | "complete";
 
 function getAgentState(session: Session): AgentState {
@@ -49,7 +58,7 @@ function StatusBadge({ state }: { state: AgentState }) {
 
   return (
     <motion.span 
-      className={`inline-flex items-center gap-2 px-3 py-1 ${c.bg} ${c.color} text-xs font-mono tracking-wider border-2 border-current`}
+      className={`inline-flex items-center gap-2 px-2 sm:px-3 py-1 ${c.bg} ${c.color} text-[10px] sm:text-xs font-mono tracking-wider border-2 border-current`}
       style={{ 
         imageRendering: 'pixelated',
         boxShadow: state !== 'idle' ? `0 0 10px currentColor` : 'none'
@@ -76,7 +85,7 @@ function OperatorCard({ session }: { session: Session }) {
       layout
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="relative p-4 rounded-none border-4 border-indigo-500 bg-gradient-to-b from-indigo-950 to-purple-950"
+      className="relative p-3 sm:p-4 rounded-none border-4 border-indigo-500 bg-gradient-to-b from-indigo-950 to-purple-950"
       style={{ 
         boxShadow: '8px 8px 0 rgba(99, 102, 241, 0.3)',
         imageRendering: 'pixelated'
@@ -90,14 +99,14 @@ function OperatorCard({ session }: { session: Session }) {
 
       {/* Title bar */}
       <div className="flex items-center justify-between mb-2 pb-2 border-b-2 border-indigo-500">
-        <h3 className="text-lg font-mono font-bold text-indigo-200 tracking-wider flex items-center gap-2">
+        <h3 className="text-base sm:text-lg font-mono font-bold text-indigo-200 tracking-wider flex items-center gap-2">
           <span className="text-yellow-400">⚡</span> OPERATOR
         </h3>
         <StatusBadge state={state} />
       </div>
 
       {/* Sprite arena */}
-      <div className="relative h-32 bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-slate-700 mb-3 overflow-hidden">
+      <div className="relative h-28 sm:h-32 bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-slate-700 mb-3 overflow-hidden">
         {/* Ground pattern */}
         <div className="absolute bottom-0 left-0 right-0 h-4 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800" 
           style={{ 
@@ -110,20 +119,20 @@ function OperatorCard({ session }: { session: Session }) {
           <PixelCharacter 
             isOperator={true} 
             state={state} 
-            containerWidth={300}
+            containerWidth={260}
           />
         </div>
 
         {/* Floating particles */}
         {state === 'thinking' && (
           <div className="absolute inset-0 pointer-events-none">
-            {[...Array(5)].map((_, i) => (
+            {[...Array(7)].map((_, i) => (
               <motion.div
                 key={i}
                 className="absolute w-1 h-1 bg-purple-400"
                 initial={{ x: 50 + i * 50, y: 100 }}
-                animate={{ y: [100, 20, 100], opacity: [0, 1, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
+                animate={{ y: [100, 12, 100], opacity: [0, 1, 0], scale: [0.5, 1.2, 0.5] }}
+                transition={{ duration: 1.6, repeat: Infinity, delay: i * 0.2 }}
               />
             ))}
           </div>
@@ -131,16 +140,17 @@ function OperatorCard({ session }: { session: Session }) {
 
         {state === 'executing' && (
           <div className="absolute inset-0 pointer-events-none">
-            {[...Array(8)].map((_, i) => (
+            {[...Array(12)].map((_, i) => (
               <motion.div
                 key={i}
                 className="absolute w-1 h-1 bg-yellow-400"
                 style={{ left: `${10 + i * 12}%` }}
                 animate={{ 
-                  y: [Math.random() * 50 + 50, Math.random() * 30, Math.random() * 50 + 50],
-                  opacity: [0.3, 1, 0.3]
+                  y: [Math.random() * 50 + 45, Math.random() * 20 + 10, Math.random() * 50 + 45],
+                  opacity: [0.3, 1, 0.3],
+                  scale: [0.8, 1.3, 0.8]
                 }}
-                transition={{ duration: 0.5 + Math.random() * 0.5, repeat: Infinity, delay: i * 0.1 }}
+                transition={{ duration: 0.4 + Math.random() * 0.4, repeat: Infinity, delay: i * 0.08 }}
               />
             ))}
           </div>
@@ -148,7 +158,7 @@ function OperatorCard({ session }: { session: Session }) {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] sm:text-xs font-mono">
         {session.channel && (
           <div className="bg-slate-900 p-2 border border-slate-700">
             <span className="text-slate-500">CHANNEL:</span>
@@ -201,7 +211,7 @@ function SubagentCard({ session }: { session: Session }) {
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9, y: -20 }}
-      className={`relative p-3 border-4 ${theme.border} bg-gradient-to-b ${theme.bg}`}
+      className={`relative p-2.5 sm:p-3 border-4 ${theme.border} bg-gradient-to-b ${theme.bg}`}
       style={{ 
         boxShadow: `6px 6px 0 ${theme.shadow}`,
         imageRendering: 'pixelated'
@@ -215,19 +225,19 @@ function SubagentCard({ session }: { session: Session }) {
 
       {/* Title */}
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-mono font-bold text-slate-200 truncate flex items-center gap-1">
+        <h3 className="text-[11px] sm:text-sm font-mono font-bold text-slate-200 truncate flex items-center gap-1">
           <span>🤖</span> {label.slice(0, 12)}
         </h3>
       </div>
 
       {/* Sprite arena */}
-      <div className="relative h-20 bg-slate-900 border-2 border-slate-700 mb-2 overflow-hidden">
+      <div className="relative h-16 sm:h-20 bg-slate-900 border-2 border-slate-700 mb-2 overflow-hidden">
         <div className="absolute bottom-0 left-0 right-0 h-2 bg-slate-800" />
         <PixelCharacter 
           isOperator={false} 
           state={state} 
           label={label}
-          containerWidth={150}
+          containerWidth={130}
         />
       </div>
 
@@ -245,7 +255,7 @@ function SubagentCard({ session }: { session: Session }) {
 // Connection status
 function ConnectionStatus({ connected, lastUpdate }: { connected: boolean; lastUpdate: Date | null }) {
   return (
-    <div className="flex items-center gap-3 font-mono text-sm">
+    <div className="flex items-center gap-3 font-mono text-xs sm:text-sm">
       <div className="flex items-center gap-2">
         <motion.div
           className={`w-3 h-3 ${connected ? "bg-green-500" : "bg-red-500"}`}
@@ -272,6 +282,10 @@ export default function Dashboard() {
   const [connected, setConnected] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [backgroundItems, setBackgroundItems] = useState<BackgroundItem[]>([]);
+  const [backgroundError, setBackgroundError] = useState<string | null>(null);
+  const [backgroundUpdated, setBackgroundUpdated] = useState<Date | null>(null);
+  const [activeTab, setActiveTab] = useState<"agents" | "background">("agents");
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -289,11 +303,31 @@ export default function Dashboard() {
     }
   }, []);
 
+  const fetchBackground = useCallback(async () => {
+    try {
+      const response = await fetch("/api/background");
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const data = await response.json();
+      setBackgroundItems(data.items || []);
+      setBackgroundUpdated(new Date());
+      setBackgroundError(null);
+    } catch (err) {
+      console.error("Failed to fetch background work:", err);
+      setBackgroundError(err instanceof Error ? err.message : "Background fetch failed");
+    }
+  }, []);
+
   useEffect(() => {
     fetchSessions();
     const interval = setInterval(fetchSessions, 3000);
     return () => clearInterval(interval);
   }, [fetchSessions]);
+
+  useEffect(() => {
+    fetchBackground();
+    const interval = setInterval(fetchBackground, 6000);
+    return () => clearInterval(interval);
+  }, [fetchBackground]);
 
   const operator = sessions.find(
     (s) => s.key.includes(":main:main") || s.label === "main"
@@ -301,7 +335,7 @@ export default function Dashboard() {
   const subagents = sessions.filter((s) => s.key.includes(":subagent:"));
 
   return (
-    <main className="min-h-screen p-4 md:p-8 bg-slate-950">
+    <main className="min-h-screen p-3 sm:p-4 md:p-8 bg-slate-950">
       {/* Scanline effect */}
       <div 
         className="fixed inset-0 pointer-events-none z-50 opacity-[0.03]"
@@ -311,17 +345,17 @@ export default function Dashboard() {
       />
 
       {/* Header */}
-      <header className="max-w-5xl mx-auto mb-8">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-4 border-4 border-slate-700 bg-slate-900"
+      <header className="max-w-5xl mx-auto mb-6 sm:mb-8">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 sm:gap-4 p-3 sm:p-4 border-4 border-slate-700 bg-slate-900"
           style={{ boxShadow: '8px 8px 0 rgba(0,0,0,0.3)' }}
         >
           <div>
-            <h1 className="text-2xl md:text-3xl font-mono font-bold tracking-wider">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-mono font-bold tracking-wider">
               <span className="text-indigo-400">AGENT</span>
               <span className="text-purple-400">_</span>
               <span className="text-pink-400">DASHBOARD</span>
             </h1>
-            <p className="text-slate-600 text-xs font-mono mt-1">
+            <p className="text-slate-600 text-[10px] sm:text-xs font-mono mt-1">
               {">> "}CLAWDBOT REAL-TIME MONITOR v2.0
             </p>
           </div>
@@ -346,9 +380,31 @@ export default function Dashboard() {
 
       {/* Main content */}
       <div className="max-w-5xl mx-auto">
+        {/* Tabs */}
+        <div className="flex items-center gap-2 mb-6 font-mono text-[10px] sm:text-xs">
+          {[
+            { id: "agents" as const, label: "AGENTS" },
+            { id: "background" as const, label: "BACKGROUND_WORK" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-3 py-2 border-2 tracking-widest ${
+                activeTab === tab.id
+                  ? "bg-indigo-800 text-indigo-100 border-indigo-400"
+                  : "bg-slate-900 text-slate-500 border-slate-700"
+              }`}
+              style={{ boxShadow: activeTab === tab.id ? "3px 3px 0 rgba(99,102,241,0.4)" : "none" }}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {activeTab === "agents" ? (
         {/* Operator section */}
         <section className="mb-8">
-          <h2 className="text-xs font-mono text-slate-500 tracking-widest mb-4 flex items-center gap-2">
+          <h2 className="text-[10px] sm:text-xs font-mono text-slate-500 tracking-widest mb-4 flex items-center gap-2">
             <span className="w-8 h-px bg-slate-700" />
             MAIN_AGENT
             <span className="flex-1 h-px bg-slate-700" />
@@ -365,13 +421,13 @@ export default function Dashboard() {
 
         {/* Subagents section */}
         <section>
-          <h2 className="text-xs font-mono text-slate-500 tracking-widest mb-4 flex items-center gap-2">
+          <h2 className="text-[10px] sm:text-xs font-mono text-slate-500 tracking-widest mb-4 flex items-center gap-2">
             <span className="w-8 h-px bg-slate-700" />
             WORKERS [{subagents.length}]
             <span className="flex-1 h-px bg-slate-700" />
           </h2>
           {subagents.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
               <AnimatePresence mode="popLayout">
                 {subagents.map((session) => (
                   <SubagentCard key={session.key} session={session} />
@@ -384,6 +440,66 @@ export default function Dashboard() {
             </div>
           )}
         </section>
+        ) : (
+          <section className="mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <h2 className="text-[10px] sm:text-xs font-mono text-slate-500 tracking-widest flex items-center gap-2">
+                <span className="w-8 h-px bg-slate-700" />
+                BACKGROUND_WORK [{backgroundItems.length}]
+                <span className="flex-1 h-px bg-slate-700" />
+              </h2>
+              <div className="text-[10px] sm:text-xs font-mono text-slate-500">
+                {backgroundUpdated ? `UPDATED ${backgroundUpdated.toLocaleTimeString()}` : "LOADING..."}
+              </div>
+            </div>
+
+            {backgroundError && (
+              <div
+                className="mb-4 p-3 bg-red-950 border-4 border-red-500 font-mono text-red-400 text-[10px] sm:text-xs"
+                style={{ boxShadow: "4px 4px 0 rgba(239,68,68,0.3)" }}
+              >
+                ⚠️ BACKGROUND ERROR: {backgroundError}
+              </div>
+            )}
+
+            {backgroundItems.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3">
+                {backgroundItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="border-4 border-slate-700 bg-slate-900 p-3"
+                    style={{ boxShadow: "5px 5px 0 rgba(15,23,42,0.5)" }}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-xs sm:text-sm font-mono text-slate-200 truncate">
+                          {item.title}
+                        </div>
+                        {item.detail && (
+                          <div className="text-[10px] sm:text-xs text-slate-500 mt-1 truncate">
+                            {item.detail}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-[10px] sm:text-xs font-mono text-slate-500 whitespace-nowrap">
+                        {new Date(item.timestamp).toLocaleTimeString()}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 mt-2 text-[10px] sm:text-xs font-mono text-slate-400">
+                      {item.status && <span className="px-2 py-0.5 border border-slate-600">{item.status}</span>}
+                      {item.source && <span className="px-2 py-0.5 border border-slate-600">{item.source}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="p-6 border-4 border-dashed border-slate-700 text-center font-mono">
+                <div className="text-3xl mb-2 opacity-40">🛰️</div>
+                <p className="text-slate-600">NO_BACKGROUND_ACTIVITY</p>
+              </div>
+            )}
+          </section>
+        )}
 
         {/* Stats footer */}
         <footer className="mt-12 pt-6 border-t-4 border-slate-800">

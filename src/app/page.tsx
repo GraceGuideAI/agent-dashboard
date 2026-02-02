@@ -466,7 +466,7 @@ export default function Dashboard() {
 
             {backgroundItems.length > 0 ? (
               <div
-                className="border-4 border-slate-700 bg-black/80 p-3 sm:p-4 font-mono text-[10px] sm:text-xs text-emerald-200 max-h-[420px] overflow-auto"
+                className="border-4 border-slate-700 bg-black/80 p-3 sm:p-4 font-mono text-[10px] sm:text-xs text-emerald-200 max-h-[60vh] overflow-y-auto touch-pan-y overscroll-contain"
                 style={{ boxShadow: "6px 6px 0 rgba(15,23,42,0.5)" }}
               >
                 {backgroundItems.map((item) => (
